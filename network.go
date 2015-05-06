@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log" //DEBUG
 	"net"
 )
 
@@ -19,7 +18,7 @@ func retrieve(dest string, magicString string) (bodyLines []string, err error) {
 	defer func() {
 		e := conn.Close()
 		if e != nil {
-			log.Panicln(e) //DEBUG
+			err = e
 		}
 	}()
 	fmt.Fprintf(conn, magicString)

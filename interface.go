@@ -14,6 +14,7 @@ func layout(g *gocui.Gui) error {
 
 	// Draw the footer
 	if f, err := g.SetView("footer", 0, maxY-3, maxX-1, maxY-1); err != nil {
+		// Only happens the first time the view is drawn
 		if err != gocui.ErrorUnkView {
 			return err
 		}
@@ -22,11 +23,16 @@ func layout(g *gocui.Gui) error {
 
 	// Draw the main section
 	if m, err := g.SetView("main", 0, 0, maxX-1, maxY-4); err != nil {
+		// Only happens the first time the view is drawn
 		if err != gocui.ErrorUnkView {
 			return err
 		}
-		for _, line := range bodyLines {
-			fmt.Fprintln(m, line)
+		parsedLines, err := loadHomepage()
+		if err != nil {
+			return err
+		}
+		for _, line := range parsedLines {
+			fmt.Fprintln(m, line[0])
 		}
 		if err := g.SetCurrentView("main"); err != nil {
 			return err
@@ -80,16 +86,18 @@ func exitDialog(g *gocui.Gui, v *gocui.View) error {
 
 // TODO error handling, restructuring?
 func visitURL(g *gocui.Gui, url string) error {
-	if err := loadPage(url); err != nil {
+	bodyLines, err := loadPage(url)
+	if err != nil {
 		return err
 	}
+	parsedLines := parseBody(bodyLines)
 	m, err := g.View("main")
 	if err != nil {
 		return err
 	}
 	m.Clear()
-	for _, line := range bodyLines {
-		fmt.Fprintln(m, line)
+	for _, line := range parsedLines {
+		fmt.Fprintln(m, line[0])
 	}
 	dialogURL, _ := g.View("dialogURL")
 	exitDialog(g, dialogURL)
@@ -105,9 +113,6 @@ func main() {
 	defer gui.Close()
 	gui.SetLayout(layout)
 	if err = setKeybindings(gui); err != nil {
-		log.Panicln(err)
-	}
-	if err = loadHomepage(); err != nil {
 		log.Panicln(err)
 	}
 	if err = gui.MainLoop(); err != nil && err != gocui.Quit {
